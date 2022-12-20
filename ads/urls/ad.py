@@ -10,8 +10,3 @@ urlpatterns = [
     path('<int:pk>/upload_image/', views.AdImageView.as_view()),
     path('<int:pk>/delete/', views.AdDeleteView.as_view()),
 ]
-
-
-    #
-    #
-    # path('by_user/', views.UserVacancyDetailView.as_view()),

@@ -10,6 +10,3 @@ urlpatterns = [
     path('<int:pk>/delete/', views.CategoryDeleteView.as_view()),
 ]
 
-
-
-    # path('by_user/', views.UserVacancyDetailView.as_view()),
