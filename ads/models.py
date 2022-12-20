@@ -40,8 +40,6 @@ class AdUser(models.Model):
     role = models.CharField(max_length=15, choices=ROLES, default="member")
     age = models.PositiveSmallIntegerField()
     location_names = models.ManyToManyField(Location)
-    # user may have several ads?
-    # ads_by_user = models.ManyToManyField(Ad) --не видит Ad, он ниже. взять ads_by_user как annotate
 
     class Meta:
         verbose_name = "Пользователь"
@@ -59,10 +57,6 @@ class Ad(models.Model):
     is_published = models.BooleanField(default=False)
     author = models.ForeignKey(AdUser, on_delete=models.CASCADE, null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    # location_name = models.CharField(max_length=1000, null=True)
-    # categories = models.ManyToManyField(Category)
-    # category_id in table Ads
-    # no location === annotate???
 
     class Meta:
         verbose_name = "Объявление"
