@@ -22,6 +22,7 @@ from ads import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api-auth/', include('rest_framework.urls')),
     path('', views.root),
     path('ad/', include('ads.urls.ad')),
     path('cat/', include('ads.urls.cat')),
