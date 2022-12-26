@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
-from ads.models import AdUser, Location
+from ads.models import AdUser, Location, Ad
 
 
-class LocationSerializer(serializers.ModelSerializer):
+class LocationModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
         fields = '__all__'
@@ -94,3 +94,46 @@ class AdUserDestroySerializer(serializers.ModelSerializer):
     class Meta:
         model = AdUser
         fields = ["id"]
+
+
+# Ad
+# class AdListSerializer(serializers.ModelSerializer):
+#     author = serializers.SlugRelatedField(
+#         read_only=True,
+#         slug_field="username"
+#     )
+#     category = serializers.SlugRelatedField(
+#         read_only=True,
+#         slug_field="name"
+#     )
+#
+#     location_names = serializers.SerializerMethodField()
+#
+#     def get_location_names(self, ad):
+#         return [location_elem.name for location_elem in ad.author.location_names.all()]
+#
+#     class Meta:
+#         model = Ad
+#         fields = '__all__'
+
+
+class AdDetailSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field="username"
+    )
+    category = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field="name"
+    )
+
+    location_names = serializers.SerializerMethodField()
+
+    def get_location_names(self, ad):
+        return [location_elem.name for location_elem in ad.author.location_names.all()]
+
+    class Meta:
+        model = model = Ad
+        fields = '__all__'
+
+

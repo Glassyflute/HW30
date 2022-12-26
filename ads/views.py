@@ -14,7 +14,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from ads.models import Category, Ad, AdUser, Location
 from ads.serializers import AdUserDetailSerializer, AdUserListSerializer, AdUserDestroySerializer, \
-    AdUserCreateSerializer, AdUserUpdateSerializer, LocationSerializer
+    AdUserCreateSerializer, AdUserUpdateSerializer, AdDetailSerializer, LocationModelSerializer
 from avito import settings
 
 
@@ -138,17 +138,51 @@ class CategoryDeleteView(DeleteView):
         return JsonResponse({"id deleted": categ_pk}, status=200)
 
 
+#########################################
 # Ad
+
+
+class AdDetailView(RetrieveAPIView):
+    """
+    Детальная информация по выбранному объявлению
+    """
+    queryset = Ad.objects.all()
+    serializer_class = AdDetailSerializer
+
+
 class AdListView(ListView):
     """
     Список всех объявлений, с сортировкой по цене объявления по убыванию, с пагинатором и
     итоговой информацией
     """
+
     model = Ad
 
     def get(self, request, *args, **kwargs):
         super().get(request, *args, **kwargs)
         self.object_list = self.object_list.select_related("author").order_by("-price")
+
+        # переопределяем queryset
+        categories = request.GET.getlist("cat", None)
+        if categories:
+            self.object_list = self.object_list.filter(category_id__in=categories)
+        # if getlist, then can input several categories in list
+
+        # поиск по вхождению слова в название объявления, без учета регистра
+        text = request.GET.get("text")
+        if text:
+            self.object_list = self.object_list.filter(name__icontains=text)
+
+        location = request.GET.get("loc")
+        if location:
+            self.object_list = self.object_list.filter(author__location_names__name__icontains=location)
+
+        price_from = request.GET.get("price_from")
+        if price_from:
+            self.object_list = self.object_list.filter(price__gte=price_from)
+        price_to = request.GET.get("price_to")
+        if price_to:
+            self.object_list = self.object_list.filter(price__lte=price_to)
 
         paginator = Paginator(self.object_list, settings.TOTAL_ON_PAGE)
         page_number = request.GET.get("page")
@@ -177,28 +211,6 @@ class AdListView(ListView):
         }
 
         return JsonResponse(response, safe=False)
-
-
-class AdDetailView(DetailView):
-    """
-    Детальная информация по выбранному объявлению
-    """
-    model = Ad
-
-    def get(self, request, *args, **kwargs):
-        ad = self.get_object()
-
-        return JsonResponse({
-            "id": ad.pk,
-            "name": ad.name,
-            "price": ad.price,
-            "description": ad.description,
-            "image": ad.image.url if ad.image else None,
-            "is_published": ad.is_published,
-            "author": ad.author.username,
-            "category": ad.category.name,
-            "location_names": list(map(str, ad.author.location_names.all()))
-        })
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -331,31 +343,15 @@ class AdDeleteView(DeleteView):
         return JsonResponse({"id deleted": ad_pk}, status=200)
 
 
+####################
 # User
-
-#                     "location_names": list(map(str, ad_user.location_names.all())),
-#                     "total_ads": ad_user.ad_set.filter(is_published=True).count(),
-#                     "ad_price_statistics": ad_user.ad_set.aggregate(average_price=Avg("price"),
-#                                                                     max_price=Max("price"),
-#                                                                     min_price=Min("price"))
-#                 }
-#             )
-#
-#         response = {
-#             "items": ad_users,
-#             "num_pages": paginator.num_pages,
-#             "total": paginator.count,
-#             "age_statistics": self.object_list.aggregate(average_age=Avg("age"),
-#                                                          max_age=Max("age"), min_age=Min("age"))
-#         }
-
 
 class LocationViewSet(ModelViewSet):
     """
     Класс с адресами на основе ViewSet с использованием Router и сериализатора
     """
     queryset = Location.objects.all()
-    serializer_class = LocationSerializer
+    serializer_class = LocationModelSerializer
 
 
 class AdUserListView(ListAPIView):
