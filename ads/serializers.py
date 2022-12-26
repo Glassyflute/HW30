@@ -20,7 +20,6 @@ class AdUserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = AdUser
         exclude = ['password']
-        # fields = '__all__'
 
 
 class AdUserDetailSerializer(serializers.ModelSerializer):
@@ -29,71 +28,69 @@ class AdUserDetailSerializer(serializers.ModelSerializer):
         read_only=True,
         slug_field="name"
     )
+    total_ads = serializers.IntegerField()
 
     class Meta:
         model = AdUser
         exclude = ['password']
-        # fields = '__all__'
-#
-#
-# class VacancyCreateSerializer(serializers.ModelSerializer):
-#     id = serializers.IntegerField(required=False)
-#     skills = serializers.SlugRelatedField(
-#         required=False,
-#         many=True,
-#         queryset=Skill.objects.all(),
-#         slug_field="name"
-#     )
-#
-#     class Meta:
-#         model = Vacancy
-#         fields = '__all__'
-#
-#     def is_valid(self, raise_exception=False):
-#         self._skills = self.initial_data.pop("skills")
-#         return super().is_valid(raise_exception=raise_exception)
-#
-#     def create(self, validated_data):
-#         vacancy = Vacancy.objects.create(**validated_data)
-#
-#         for skill in self._skills:
-#             skill_obj, _ = Skill.objects.get_or_create(name=skill)
-#             vacancy.skills.add(skill_obj)
-#
-#         vacancy.save()
-#         return vacancy
-#
-#
-# class VacancyUpdateSerializer(serializers.ModelSerializer):
-#     skills = serializers.SlugRelatedField(
-#         required=False,
-#         many=True,
-#         queryset=Skill.objects.all(),
-#         slug_field="name"
-#     )
-#     user = serializers.PrimaryKeyRelatedField(read_only=True)
-#     created = serializers.DateField(read_only=True)
-#
-#     class Meta:
-#         model = Vacancy
-#         fields = ["id", "text", "slug", "status", "created", "skills", "user"]
-#
-#     def is_valid(self, raise_exception=False):
-#         self._skills = self.initial_data.pop("skills")
-#         return super().is_valid(raise_exception=raise_exception)
-#
-#     def save(self):
-#         vacancy = super().save()
-#
-#         for skill in self._skills:
-#             skill_obj, _ = Skill.objects.get_or_create(name=skill)
-#             vacancy.skills.add(skill_obj)
-#
-#         vacancy.save()
-#         return vacancy
-#
-#
-# class VacancyDestroySerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Vacancy
-#         fields = ["id"]
+
+
+class AdUserCreateSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+    location_names = serializers.SlugRelatedField(
+        required=False,
+        many=True,
+        queryset=Location.objects.all(),
+        slug_field="name"
+    )
+
+    class Meta:
+        model = AdUser
+        fields = '__all__'
+
+    def is_valid(self, raise_exception=False):
+        self._location_names = self.initial_data.pop("location_names")
+        return super().is_valid(raise_exception=raise_exception)
+
+    def create(self, validated_data):
+        new_user = AdUser.objects.create(**validated_data)
+
+        for loc_item in self._location_names:
+            loc_obj, _ = Location.objects.get_or_create(name=loc_item)
+            new_user.location_names.add(loc_obj)
+
+        new_user.save()
+        return new_user
+
+
+class AdUserUpdateSerializer(serializers.ModelSerializer):
+    location_names = serializers.SlugRelatedField(
+        required=False,
+        many=True,
+        queryset=Location.objects.all(),
+        slug_field="name"
+    )
+
+    class Meta:
+        model = AdUser
+        fields = '__all__'
+
+    def is_valid(self, raise_exception=False):
+        self._location_names = self.initial_data.pop("location_names")
+        return super().is_valid(raise_exception=raise_exception)
+
+    def save(self):
+        user_upd = super().save()
+
+        for loc_item in self._location_names:
+            loc_obj, _ = Location.objects.get_or_create(name=loc_item)
+            user_upd.location_names.add(loc_obj)
+
+        user_upd.save()
+        return user_upd
+
+
+class AdUserDestroySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdUser
+        fields = ["id"]

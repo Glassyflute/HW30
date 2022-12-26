@@ -9,10 +9,11 @@ from django.utils.decorators import method_decorator
 
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
-from rest_framework.generics import RetrieveAPIView, ListAPIView
+from rest_framework.generics import RetrieveAPIView, ListAPIView, DestroyAPIView, CreateAPIView, UpdateAPIView
 
 from ads.models import Category, Ad, AdUser, Location
-from ads.serializers import AdUserDetailSerializer, AdUserListSerializer
+from ads.serializers import AdUserDetailSerializer, AdUserListSerializer, AdUserDestroySerializer, \
+    AdUserCreateSerializer, AdUserUpdateSerializer
 from avito import settings
 
 
@@ -396,7 +397,9 @@ class AdUserDetailView(RetrieveAPIView):
     """
     Детальная информация по выбранному пользователю
     """
-    queryset = AdUser.objects.all()
+    queryset = AdUser.objects.annotate(
+        total_ads=Count("ads", filter=Q(ads__is_published=True))
+    )
     serializer_class = AdUserDetailSerializer
 
     # def get(self, request, *args, **kwargs):
@@ -419,107 +422,117 @@ class AdUserDetailView(RetrieveAPIView):
         # })
 
 
-@method_decorator(csrf_exempt, name="dispatch")
-class AdUserCreateView(CreateView):
+# @method_decorator(csrf_exempt, name="dispatch")
+class AdUserCreateView(CreateAPIView):
     """
     Создание нового пользователя
     """
-    model = AdUser
-    fields = "__all__"
+    queryset = AdUser.objects.all()
+    serializer_class = AdUserCreateSerializer
 
-    def post(self, request, *args, **kwargs):
-        ad_user_data = json.loads(request.body)
+    # model = AdUser
+    # fields = "__all__"
+    #
+    # def post(self, request, *args, **kwargs):
+    #     ad_user_data = json.loads(request.body)
+    #
+    #     ad_user_new = AdUser.objects.create(
+    #         first_name=ad_user_data.get("first_name"),
+    #         last_name=ad_user_data.get("last_name"),
+    #         username=ad_user_data.get("username"),
+    #         password=ad_user_data.get("password"),
+    #         role=ad_user_data.get("role"),
+    #         age=ad_user_data.get("age")
+    #     )
+    #
+    #     locations = ad_user_data.get("location_names")
+    #     for location in locations:
+    #         location_obj, _ = Location.objects.get_or_create(name=location)
+    #         ad_user_new.location_names.add(location_obj)
+    #
+    #     locations_all_qs = ad_user_new.location_names.all()
+    #
+    #     return JsonResponse({
+    #         "id": ad_user_new.pk,
+    #         "first_name": ad_user_new.first_name,
+    #         "last_name": ad_user_new.last_name,
+    #         "username": ad_user_new.username,
+    #         "password": ad_user_new.password,
+    #         "role": ad_user_new.role,
+    #         "age": ad_user_new.age,
+    #         "location_names": [location_elem.name for location_elem in locations_all_qs]
+    #     })
 
-        ad_user_new = AdUser.objects.create(
-            first_name=ad_user_data.get("first_name"),
-            last_name=ad_user_data.get("last_name"),
-            username=ad_user_data.get("username"),
-            password=ad_user_data.get("password"),
-            role=ad_user_data.get("role"),
-            age=ad_user_data.get("age")
-        )
 
-        locations = ad_user_data.get("location_names")
-        for location in locations:
-            location_obj, _ = Location.objects.get_or_create(name=location)
-            ad_user_new.location_names.add(location_obj)
-
-        locations_all_qs = ad_user_new.location_names.all()
-
-        return JsonResponse({
-            "id": ad_user_new.pk,
-            "first_name": ad_user_new.first_name,
-            "last_name": ad_user_new.last_name,
-            "username": ad_user_new.username,
-            "password": ad_user_new.password,
-            "role": ad_user_new.role,
-            "age": ad_user_new.age,
-            "location_names": [location_elem.name for location_elem in locations_all_qs]
-        })
-
-
-@method_decorator(csrf_exempt, name="dispatch")
-class AdUserUpdateView(UpdateView):
+# @method_decorator(csrf_exempt, name="dispatch")
+class AdUserUpdateView(UpdateAPIView):
     """
     Обновление данных по пользователю
     """
-    model = AdUser
-    fields = "__all__"
-
-    def patch(self, request, *args, **kwargs):
-        super().post(request, *args, **kwargs)
-
-        ad_user_data = json.loads(request.body)
-
-        if "first_name" in ad_user_data:
-            self.object.first_name = ad_user_data["first_name"]
-        if "last_name" in ad_user_data:
-            self.object.last_name = ad_user_data["last_name"]
-        if "role" in ad_user_data:
-            self.object.role = ad_user_data["role"]
-        if "age" in ad_user_data:
-            self.object.age = ad_user_data["age"]
-
-        locations = ad_user_data.get("location_names")
-        for location in locations:
-            location_obj, _ = Location.objects.get_or_create(name=location)
-            self.object.location_names.add(location_obj)
-        locations_all_qs = self.object.location_names.all()
-
-        self.object.username = get_object_or_404(AdUser, username=ad_user_data["username"])
-        if self.object.username:
-            self.object.password = ad_user_data["password"]
-
-        try:
-            self.object.full_clean()
-        except ValidationError as e:
-            return JsonResponse(e.message_dict, status=422)
-
-        self.object.save()
-
-        return JsonResponse({
-                    "id": self.object.pk,
-                    "first_name": self.object.first_name,
-                    "last_name": self.object.last_name,
-                    "username": self.object.username,
-                    "password": self.object.password,
-                    "role": self.object.role,
-                    "age": self.object.age,
-                    "location_names": [location_elem.name for location_elem in locations_all_qs]
-                })
+    queryset = AdUser.objects.all()
+    serializer_class = AdUserUpdateSerializer
 
 
-@method_decorator(csrf_exempt, name="dispatch")
-class AdUserDeleteView(DeleteView):
+    # model = AdUser
+    # fields = "__all__"
+    #
+    # def patch(self, request, *args, **kwargs):
+    #     super().post(request, *args, **kwargs)
+    #
+    #     ad_user_data = json.loads(request.body)
+    #
+    #     if "first_name" in ad_user_data:
+    #         self.object.first_name = ad_user_data["first_name"]
+    #     if "last_name" in ad_user_data:
+    #         self.object.last_name = ad_user_data["last_name"]
+    #     if "role" in ad_user_data:
+    #         self.object.role = ad_user_data["role"]
+    #     if "age" in ad_user_data:
+    #         self.object.age = ad_user_data["age"]
+    #
+    #     locations = ad_user_data.get("location_names")
+    #     for location in locations:
+    #         location_obj, _ = Location.objects.get_or_create(name=location)
+    #         self.object.location_names.add(location_obj)
+    #     locations_all_qs = self.object.location_names.all()
+    #
+    #     self.object.username = get_object_or_404(AdUser, username=ad_user_data["username"])
+    #     if self.object.username:
+    #         self.object.password = ad_user_data["password"]
+    #
+    #     try:
+    #         self.object.full_clean()
+    #     except ValidationError as e:
+    #         return JsonResponse(e.message_dict, status=422)
+    #
+    #     self.object.save()
+    #
+    #     return JsonResponse({
+    #                 "id": self.object.pk,
+    #                 "first_name": self.object.first_name,
+    #                 "last_name": self.object.last_name,
+    #                 "username": self.object.username,
+    #                 "password": self.object.password,
+    #                 "role": self.object.role,
+    #                 "age": self.object.age,
+    #                 "location_names": [location_elem.name for location_elem in locations_all_qs]
+    #             })
+
+
+# @method_decorator(csrf_exempt, name="dispatch")
+class AdUserDeleteView(DestroyAPIView):
     """
     Удаление пользователя
     """
-    model = AdUser
-    success_url = "/"
+    queryset = AdUser.objects.all()
+    serializer_class = AdUserDestroySerializer
 
-    def delete(self, request, *args, **kwargs):
-        user_ = self.get_object()
-        user_pk = user_.pk
-        super().delete(request, *args, **kwargs)
-        return JsonResponse({"id deleted": user_pk}, status=200)
+    # model = AdUser
+    # success_url = "/"
+    #
+    # def delete(self, request, *args, **kwargs):
+    #     user_ = self.get_object()
+    #     user_pk = user_.pk
+    #     super().delete(request, *args, **kwargs)
+    #     return JsonResponse({"id deleted": user_pk}, status=200)
 
