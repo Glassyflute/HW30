@@ -2,15 +2,17 @@ import json
 
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Avg, Max, Min
+from django.db.models import Avg, Max, Min, Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
+from rest_framework.generics import RetrieveAPIView, ListAPIView
 
 from ads.models import Category, Ad, AdUser, Location
+from ads.serializers import AdUserDetailSerializer, AdUserListSerializer
 from avito import settings
 
 
@@ -328,72 +330,93 @@ class AdDeleteView(DeleteView):
 
 
 # User
-class AdUserListView(ListView):
+
+
+# class AdUserListView(ListView):
+#     """
+#     Список пользователей, с сортировкой по username, с пагинатором и
+#     итоговой информацией
+#     """
+#     model = AdUser
+#
+#     def get(self, request, *args, **kwargs):
+#         super().get(request, *args, **kwargs)
+#
+#         self.object_list = self.object_list.order_by("username")
+#
+#
+#
+#         # paginator = Paginator(self.object_list, settings.TOTAL_ON_PAGE)
+#         # page_number = request.GET.get("page")
+#         # page_obj = paginator.get_page(page_number)
+#
+#         ad_users = []
+#         # добавлена сумма опубликованных объявлений total_ads по каждому пользователю
+#         for ad_user in page_obj:
+#             ad_users.append(
+#                 {
+#                     "id": ad_user.pk,
+#                     "first_name": ad_user.first_name,
+#                     "last_name": ad_user.last_name,
+#                     "username": ad_user.username,
+#                     "role": ad_user.role,
+#                     "age": ad_user.age,
+#                     "location_names": list(map(str, ad_user.location_names.all())),
+#                     "total_ads": ad_user.ad_set.filter(is_published=True).count(),
+#                     "ad_price_statistics": ad_user.ad_set.aggregate(average_price=Avg("price"),
+#                                                                     max_price=Max("price"),
+#                                                                     min_price=Min("price"))
+#                 }
+#             )
+#
+#         response = {
+#             "items": ad_users,
+#             "num_pages": paginator.num_pages,
+#             "total": paginator.count,
+#             "age_statistics": self.object_list.aggregate(average_age=Avg("age"),
+#                                                          max_age=Max("age"), min_age=Min("age"))
+#         }
+#
+#         return JsonResponse(response, safe=False)
+# AdUserListSerializer
+
+
+class AdUserListView(ListAPIView):
     """
-    Список пользователей, с сортировкой по username, с пагинатором и
-    итоговой информацией
+    Список пользователей, с сортировкой по username. Queryset выводит дополнительно кол-во
+    объявлений со статусом is_published по каждому из списка пользователей.
     """
-    model = AdUser
-
-    def get(self, request, *args, **kwargs):
-        super().get(request, *args, **kwargs)
-
-        self.object_list = self.object_list.order_by("username")
-
-        paginator = Paginator(self.object_list, settings.TOTAL_ON_PAGE)
-        page_number = request.GET.get("page")
-        page_obj = paginator.get_page(page_number)
-
-        ad_users = []
-        # добавлена сумма опубликованных объявлений total_ads по каждому пользователю
-        for ad_user in page_obj:
-            ad_users.append(
-                {
-                    "id": ad_user.pk,
-                    "first_name": ad_user.first_name,
-                    "last_name": ad_user.last_name,
-                    "username": ad_user.username,
-                    "role": ad_user.role,
-                    "age": ad_user.age,
-                    "location_names": list(map(str, ad_user.location_names.all())),
-                    "total_ads": ad_user.ad_set.filter(is_published=True).count(),
-                    "ad_price_statistics": ad_user.ad_set.aggregate(average_price=Avg("price"),
-                                                                    max_price=Max("price"),
-                                                                    min_price=Min("price"))
-                }
-            )
-
-        response = {
-            "items": ad_users,
-            "num_pages": paginator.num_pages,
-            "total": paginator.count,
-            "age_statistics": self.object_list.aggregate(average_age=Avg("age"),
-                                                         max_age=Max("age"), min_age=Min("age"))
-        }
-
-        return JsonResponse(response, safe=False)
+    queryset = AdUser.objects.annotate(
+        total_ads=Count("ads", filter=Q(ads__is_published=True))
+    ).order_by("username")
+    serializer_class = AdUserListSerializer
 
 
-class AdUserDetailView(DetailView):
+class AdUserDetailView(RetrieveAPIView):
     """
     Детальная информация по выбранному пользователю
     """
-    model = AdUser
+    queryset = AdUser.objects.all()
+    serializer_class = AdUserDetailSerializer
 
-    def get(self, request, *args, **kwargs):
-        ad_user = self.get_object()
+    # def get(self, request, *args, **kwargs):
+    #     ad_user = self.get_object()
 
         # total_ads показывает сумму опубликованных объявлений по пользователю, обращаясь к таблице ad
-        return JsonResponse({
-            "id": ad_user.pk,
-            "first_name": ad_user.first_name,
-            "last_name": ad_user.last_name,
-            "username": ad_user.username,
-            "role": ad_user.role,
-            "age": ad_user.age,
-            "location_names": list(map(str, ad_user.location_names.all())),
-            "total_ads": ad_user.ad_set.filter(is_published=True).count()
-        })
+
+        # return JsonResponse(AdUserDetailSerializer(ad_user).data)
+
+
+        # return JsonResponse({
+        #     "id": ad_user.pk,
+        #     "first_name": ad_user.first_name,
+        #     "last_name": ad_user.last_name,
+        #     "username": ad_user.username,
+        #     "role": ad_user.role,
+        #     "age": ad_user.age,
+        #     "location_names": list(map(str, ad_user.location_names.all())),
+        #     "total_ads": ad_user.ad_set.filter(is_published=True).count()
+        # })
 
 
 @method_decorator(csrf_exempt, name="dispatch")
