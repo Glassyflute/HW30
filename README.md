@@ -35,7 +35,10 @@
 
 ## Описание задач и действий
 - Подключен Django REST framework. 
-- Часть прошлых версий файлов переписана с учетом ...
+- Пользователи (модель AdUser) переписаны на GenericView из DRF (использованы ListApiView, RetrieveAPIView, 
+- CreateAPIView, UpdateAPIView, DestroyAPIView).
+- Используются встроенная пагинация DRF, Serializers.
+- Для удобства вывода total_ads пользователя добавлен параметр related_name внутри поля author таблицы ad.
+- API для модели Location реализовано с использованием ViewSet и Router.
+- Использован ряд фильтров для поиска по объявлениям (модель Ad) с использованием lookup's.
 - 
-
-

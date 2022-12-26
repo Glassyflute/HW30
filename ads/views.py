@@ -10,10 +10,11 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 from rest_framework.generics import RetrieveAPIView, ListAPIView, DestroyAPIView, CreateAPIView, UpdateAPIView
+from rest_framework.viewsets import ModelViewSet
 
 from ads.models import Category, Ad, AdUser, Location
 from ads.serializers import AdUserDetailSerializer, AdUserListSerializer, AdUserDestroySerializer, \
-    AdUserCreateSerializer, AdUserUpdateSerializer
+    AdUserCreateSerializer, AdUserUpdateSerializer, LocationSerializer
 from avito import settings
 
 
@@ -332,36 +333,6 @@ class AdDeleteView(DeleteView):
 
 # User
 
-
-# class AdUserListView(ListView):
-#     """
-#     Список пользователей, с сортировкой по username, с пагинатором и
-#     итоговой информацией
-#     """
-#     model = AdUser
-#
-#     def get(self, request, *args, **kwargs):
-#         super().get(request, *args, **kwargs)
-#
-#         self.object_list = self.object_list.order_by("username")
-#
-#
-#
-#         # paginator = Paginator(self.object_list, settings.TOTAL_ON_PAGE)
-#         # page_number = request.GET.get("page")
-#         # page_obj = paginator.get_page(page_number)
-#
-#         ad_users = []
-#         # добавлена сумма опубликованных объявлений total_ads по каждому пользователю
-#         for ad_user in page_obj:
-#             ad_users.append(
-#                 {
-#                     "id": ad_user.pk,
-#                     "first_name": ad_user.first_name,
-#                     "last_name": ad_user.last_name,
-#                     "username": ad_user.username,
-#                     "role": ad_user.role,
-#                     "age": ad_user.age,
 #                     "location_names": list(map(str, ad_user.location_names.all())),
 #                     "total_ads": ad_user.ad_set.filter(is_published=True).count(),
 #                     "ad_price_statistics": ad_user.ad_set.aggregate(average_price=Avg("price"),
@@ -377,9 +348,14 @@ class AdDeleteView(DeleteView):
 #             "age_statistics": self.object_list.aggregate(average_age=Avg("age"),
 #                                                          max_age=Max("age"), min_age=Min("age"))
 #         }
-#
-#         return JsonResponse(response, safe=False)
-# AdUserListSerializer
+
+
+class LocationViewSet(ModelViewSet):
+    """
+    Класс с адресами на основе ViewSet с использованием Router и сериализатора
+    """
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
 
 
 class AdUserListView(ListAPIView):
@@ -402,27 +378,7 @@ class AdUserDetailView(RetrieveAPIView):
     )
     serializer_class = AdUserDetailSerializer
 
-    # def get(self, request, *args, **kwargs):
-    #     ad_user = self.get_object()
 
-        # total_ads показывает сумму опубликованных объявлений по пользователю, обращаясь к таблице ad
-
-        # return JsonResponse(AdUserDetailSerializer(ad_user).data)
-
-
-        # return JsonResponse({
-        #     "id": ad_user.pk,
-        #     "first_name": ad_user.first_name,
-        #     "last_name": ad_user.last_name,
-        #     "username": ad_user.username,
-        #     "role": ad_user.role,
-        #     "age": ad_user.age,
-        #     "location_names": list(map(str, ad_user.location_names.all())),
-        #     "total_ads": ad_user.ad_set.filter(is_published=True).count()
-        # })
-
-
-# @method_decorator(csrf_exempt, name="dispatch")
 class AdUserCreateView(CreateAPIView):
     """
     Создание нового пользователя
@@ -430,41 +386,7 @@ class AdUserCreateView(CreateAPIView):
     queryset = AdUser.objects.all()
     serializer_class = AdUserCreateSerializer
 
-    # model = AdUser
-    # fields = "__all__"
-    #
-    # def post(self, request, *args, **kwargs):
-    #     ad_user_data = json.loads(request.body)
-    #
-    #     ad_user_new = AdUser.objects.create(
-    #         first_name=ad_user_data.get("first_name"),
-    #         last_name=ad_user_data.get("last_name"),
-    #         username=ad_user_data.get("username"),
-    #         password=ad_user_data.get("password"),
-    #         role=ad_user_data.get("role"),
-    #         age=ad_user_data.get("age")
-    #     )
-    #
-    #     locations = ad_user_data.get("location_names")
-    #     for location in locations:
-    #         location_obj, _ = Location.objects.get_or_create(name=location)
-    #         ad_user_new.location_names.add(location_obj)
-    #
-    #     locations_all_qs = ad_user_new.location_names.all()
-    #
-    #     return JsonResponse({
-    #         "id": ad_user_new.pk,
-    #         "first_name": ad_user_new.first_name,
-    #         "last_name": ad_user_new.last_name,
-    #         "username": ad_user_new.username,
-    #         "password": ad_user_new.password,
-    #         "role": ad_user_new.role,
-    #         "age": ad_user_new.age,
-    #         "location_names": [location_elem.name for location_elem in locations_all_qs]
-    #     })
 
-
-# @method_decorator(csrf_exempt, name="dispatch")
 class AdUserUpdateView(UpdateAPIView):
     """
     Обновление данных по пользователю
@@ -473,53 +395,6 @@ class AdUserUpdateView(UpdateAPIView):
     serializer_class = AdUserUpdateSerializer
 
 
-    # model = AdUser
-    # fields = "__all__"
-    #
-    # def patch(self, request, *args, **kwargs):
-    #     super().post(request, *args, **kwargs)
-    #
-    #     ad_user_data = json.loads(request.body)
-    #
-    #     if "first_name" in ad_user_data:
-    #         self.object.first_name = ad_user_data["first_name"]
-    #     if "last_name" in ad_user_data:
-    #         self.object.last_name = ad_user_data["last_name"]
-    #     if "role" in ad_user_data:
-    #         self.object.role = ad_user_data["role"]
-    #     if "age" in ad_user_data:
-    #         self.object.age = ad_user_data["age"]
-    #
-    #     locations = ad_user_data.get("location_names")
-    #     for location in locations:
-    #         location_obj, _ = Location.objects.get_or_create(name=location)
-    #         self.object.location_names.add(location_obj)
-    #     locations_all_qs = self.object.location_names.all()
-    #
-    #     self.object.username = get_object_or_404(AdUser, username=ad_user_data["username"])
-    #     if self.object.username:
-    #         self.object.password = ad_user_data["password"]
-    #
-    #     try:
-    #         self.object.full_clean()
-    #     except ValidationError as e:
-    #         return JsonResponse(e.message_dict, status=422)
-    #
-    #     self.object.save()
-    #
-    #     return JsonResponse({
-    #                 "id": self.object.pk,
-    #                 "first_name": self.object.first_name,
-    #                 "last_name": self.object.last_name,
-    #                 "username": self.object.username,
-    #                 "password": self.object.password,
-    #                 "role": self.object.role,
-    #                 "age": self.object.age,
-    #                 "location_names": [location_elem.name for location_elem in locations_all_qs]
-    #             })
-
-
-# @method_decorator(csrf_exempt, name="dispatch")
 class AdUserDeleteView(DestroyAPIView):
     """
     Удаление пользователя
@@ -527,12 +402,4 @@ class AdUserDeleteView(DestroyAPIView):
     queryset = AdUser.objects.all()
     serializer_class = AdUserDestroySerializer
 
-    # model = AdUser
-    # success_url = "/"
-    #
-    # def delete(self, request, *args, **kwargs):
-    #     user_ = self.get_object()
-    #     user_pk = user_.pk
-    #     super().delete(request, *args, **kwargs)
-    #     return JsonResponse({"id deleted": user_pk}, status=200)
 
