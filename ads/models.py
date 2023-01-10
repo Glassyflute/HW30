@@ -49,6 +49,29 @@ class AdUser(models.Model):
         return self.username
 
 
+# class AdUser(models.Model):
+#     ROLES = [
+#         ("member", "Участник"),
+#         ("moderator", "Модератор"),
+#         ("admin", "Админ")
+#     ]
+#
+#     first_name = models.CharField(max_length=20)
+#     last_name = models.CharField(max_length=20, null=True)
+#     username = models.SlugField(max_length=30, unique=True)
+#     password = models.SlugField(max_length=30)
+#     role = models.CharField(max_length=15, choices=ROLES, default="member")
+#     age = models.PositiveSmallIntegerField()
+#     location_names = models.ManyToManyField(Location)
+#
+#     class Meta:
+#         verbose_name = "Пользователь"
+#         verbose_name_plural = "Пользователи"
+#
+#     def __str__(self):
+#         return self.username
+
+
 class Ad(models.Model):
     name = models.CharField(max_length=200)
     price = models.PositiveIntegerField()
